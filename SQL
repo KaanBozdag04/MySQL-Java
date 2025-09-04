@@ -1,0 +1,132 @@
+DROP DATABASE IF EXISTS shopdb;
+CREATE DATABASE shopdb;
+USE shopdb;
+
+-- =========================
+-- Tabeller
+-- =========================
+
+-- Märken
+CREATE TABLE brand (
+    brand_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- Kategorier
+CREATE TABLE category (
+    category_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- Produkter
+CREATE TABLE product (
+    product_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL, -- mer specifikt namn (t.ex. "Byxor Slimfit")
+    size VARCHAR(10) NOT NULL,
+    color VARCHAR(50) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    stock INT NOT NULL CHECK (stock >= 0),
+    brand_id INT,
+    category_id INT,
+    FOREIGN KEY (brand_id) REFERENCES brand(brand_id),
+    FOREIGN KEY (category_id) REFERENCES category(category_id)
+);
+
+-- Kunder
+CREATE TABLE customer (
+    customer_id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    city VARCHAR(50)
+);
+
+-- Beställningar
+CREATE TABLE orders (
+    order_id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id INT,
+    order_date DATE,
+    payment_method ENUM('Klarna', 'Swish', 'Kort') NOT NULL,
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
+);
+
+-- Orderrader
+CREATE TABLE order_item (
+    order_id INT,
+    product_id INT,
+    quantity INT NOT NULL CHECK (quantity > 0),
+    PRIMARY KEY (order_id, product_id),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    FOREIGN KEY (product_id) REFERENCES product(product_id)
+);
+
+-- =========================
+-- Exempeldata
+-- =========================
+
+-- Märken
+INSERT INTO brand (name) VALUES 
+('SweetPants'), ('Nike'), ('Adidas'), ('Zara'), ('H&M');
+
+-- Kategorier
+INSERT INTO category (name) VALUES
+('Byxor'), ('Klänning'), ('T-shirt'), ('Tröja'), ('Strumpor'), ('Hoodie'), ('Shorts');
+
+-- Produkter
+INSERT INTO product (name, size, color, price, brand_id, category_id, stock) VALUES
+('Byxor Slimfit', '38', 'Svart', 599, 1, 1, 10), -- SweetPants, kategori Byxor
+('Byxor Sport', '40', 'Blå', 499, 2, 1, 15),
+('Klänning Sommar', '36', 'Röd', 799, 4, 2, 8),
+('T-shirt Basic', 'M', 'Vit', 199, 3, 3, 25),
+('Tröja Classic', 'L', 'Svart', 399, 2, 4, 12),
+('Strumpor Pack 5', 'OneSize', 'Vit', 59, 5, 5, 50),
+('Hoodie Oversize', 'M', 'Grå', 699, 3, 6, 10),
+('Shorts Cargo', 'L', 'Svart', 299, 4, 7, 18);
+
+-- Kunder
+INSERT INTO customer (first_name, last_name, city) VALUES
+('Amanda', 'Persson', 'Stockholm'),
+('Erik', 'Johansson', 'Göteborg'),
+('Lisa', 'Karlsson', 'Malmö'),
+('Oskar', 'Nilsson', 'Uppsala'),
+('Maria', 'Andersson', 'Stockholm');
+
+-- Beställningar
+INSERT INTO orders (customer_id, order_date, payment_method) VALUES
+(1, '2025-06-05', 'Klarna'),
+(2, '2025-06-12', 'Kort'),
+(3, '2025-07-02', 'Swish'),
+(4, '2025-07-18', 'Kort'),
+(5, '2025-08-03', 'Swish'),
+(1, '2025-08-20', 'Klarna');
+
+-- Orderrader
+INSERT INTO order_item VALUES
+(1,1,2),  
+(1,6,5),
+(2,2,1),
+(2,4,2),
+(3,3,1),
+(3,5,1),
+(4,7,2),
+(4,8,1),
+(5,4,3),
+(5,6,10),
+(6,1,1),
+(6,3,1);
+
+-- =========================
+-- SQL-fråga
+-- =========================
+
+-- Vilka kunder har köpt svarta byxor i storlek 38 av märket SweetPants?
+SELECT DISTINCT c.first_name, c.last_name
+FROM customer c
+JOIN orders o ON c.customer_id = o.customer_id
+JOIN order_item oi ON o.order_id = oi.order_id
+JOIN product p ON oi.product_id = p.product_id
+JOIN brand b ON p.brand_id = b.brand_id
+JOIN category cat ON p.category_id = cat.category_id
+WHERE cat.name = 'Byxor'
+  AND p.size = '38'
+  AND p.color = 'Svart'
+  AND b.name = 'SweetPants';
