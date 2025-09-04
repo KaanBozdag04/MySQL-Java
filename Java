@@ -1,0 +1,38 @@
+import java.sql.*;
+
+public class Main {
+    public static void main(String[] args) {
+        String url = "jdbc:mysql://localhost:3306/shopdb";
+        String user = "root";
+        String password = "";
+
+        String sql = """
+    SELECT DISTINCT c.first_name, c.last_name
+    FROM customer c
+    JOIN orders o ON c.customer_id = o.customer_id
+    JOIN order_item oi ON o.order_id = oi.order_id
+    JOIN product p ON oi.product_id = p.product_id
+    JOIN brand b ON p.brand_id = b.brand_id
+    WHERE LOWER(p.name) LIKE '%byxor%'
+      AND p.size = '38'
+      AND LOWER(p.color) = 'svart'
+      AND LOWER(b.name) = 'sweetpants';
+""";
+
+
+        try (Connection conn = DriverManager.getConnection(url, user, password);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            System.out.println("Kunder som köpt svarta byxor i storlek 38 av märket Weekday:");
+            while (rs.next()) {
+                String firstName = rs.getString("first_name");
+                String lastName = rs.getString("last_name");
+                System.out.println(firstName + " " + lastName);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
